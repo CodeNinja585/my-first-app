@@ -1,0 +1,27 @@
+{
+  "name": "my-first-app",
+  "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "tsc -b --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "format:check": "prettier --check .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@eslint/js": "^10.0.1",
+    "@typescript-eslint/eslint-plugin": "^8.70.0",
+    "@typescript-eslint/parser": "^8.70.0",
+    "eslint": "^10.10.0",
+    "eslint-plugin-import": "^2.32.0",
+    "prettier": "^3.9.6",
+    "typescript": "^6.0.3",
+    "vitest": "^1.6.1"
+  }
+}
