@@ -12,10 +12,9 @@
   "dependencies": {
     "expo": "^52.0.0",
     "expo-sqlite": "~15.0.0",
-    "expo-sqlite-standalone": "~15.0.0",
     "expo-network": "~7.0.0",
     "expo-secure-store": "~14.0.0",
-    "@clerk/expo": "^1.5.0",
+    "@clerk/expo": "^4.6.6",
     "expo-router": "~4.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -26,6 +25,7 @@
   },
   "devDependencies": {
     "@types/react": "~18.2.0",
+    "@types/node": "^22.0.0",
     "typescript": "^6.0.3"
   },
   "private": true

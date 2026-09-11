@@ -1,1 +1,1 @@
-{"root":["./src/index.ts"],"version":"6.0.3"}
+{"root":["./src/index.ts","./src/config/env.ts","./src/screens/SignInScreen.tsx","./src/screens/SignedInScreen.tsx","./src/sync/index.ts","./app.config.ts","./index.tsx"],"errors":true,"version":"6.0.3"}
