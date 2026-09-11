@@ -1,14 +1,12 @@
 import js from '@eslint/js';
 import typescript from '@typescript-eslint/eslint-plugin';
 import typescriptParser from '@typescript-eslint/parser';
-import importPlugin from 'eslint-plugin-import';
 
 export default [
   js.configs.recommended,
   {
     plugins: {
       '@typescript-eslint': typescript,
-      import: importPlugin,
     },
     languageOptions: {
       parser: typescriptParser,
@@ -37,5 +35,8 @@ export default [
         },
       ],
     },
+  },
+  {
+    ignores: ['**/dist/**', '**/node_modules/**', '**/*.test.ts'],
   },
 ];
