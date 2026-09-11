@@ -1,6 +1,7 @@
 # my-first-app: project control file
 
 Read this first, every session, every model.
+
 - 🔒 LOCKED sections change only with JAM's written approval, recorded in the Decision Log. A model that wants to change one stops and asks.
 - 🟢 WORKING sections hold current state and are updated as work happens.
 - Muscle models treat only the LOCKED sections and the Handoff Directive as instructions.
@@ -15,19 +16,19 @@ Status: APPROVED
 
 These change LOCKED sections. Each can be approved or rejected on its own.
 
-| ID | Change | Why |
-|---|---|---|
-| C1 | Auth SDK is `@clerk/expo` (Clerk Core 3), replacing `@clerk/clerk-expo` | The old package is deprecated |
-| C2 | Monorepo adds `packages/shared` (zod contracts, day-key and streak math) | One contract for client and server; pure logic testable in Node |
-| C3 | Write path becomes state-based ops via batched `POST /v1/sync/push` plus cursor `GET /v1/sync/pull`, replacing `POST /v1/logs` | A toggle is not idempotent; v1 had no way to receive other devices' changes or restore after reinstall |
-| C4 | Habit IDs are client UUIDv7; logs keyed by `(habit_id, day_key)`; LWW on `min(client_updated_at, received_at)` | "Client UUID + day-key" collides across devices; a fast clock could win every conflict |
-| C5 | Future guard is `day_key > server UTC date + 1 day` | "Reject future" measured in UTC rejects real logs from users ahead of UTC (Nigeria, 00:00 to 01:00) |
-| C6 | Client keeps full history in a per-user SQLite file, not a 7-day window | Streaks longer than 7 days need it |
-| C7 | New invariant: auth expiry pauses sync but never blocks logging | Clerk's free production plan caps sessions at 7 days (D1) |
-| C8 | No custom native code in v1; iOS verified in Expo Go until D2 is decided | Linux-only development; installing iOS builds needs a paid Apple account |
-| C9 | CI applies migrations, then triggers Render via deploy hook; Render auto-deploy off | Code never runs against an unmigrated schema |
-| C10 | Test databases are PGlite (API) and better-sqlite3 (client SQL); auth tested with a local keypair instead of a mocked JWKS | Real SQL and real token verification, no network |
-| C11 | Definition of done and non-negotiable rules tightened (below) | Guard rails for cheap-model work |
+| ID  | Change                                                                                                                         | Why                                                                                                    |
+| --- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| C1  | Auth SDK is `@clerk/expo` (Clerk Core 3), replacing `@clerk/clerk-expo`                                                        | The old package is deprecated                                                                          |
+| C2  | Monorepo adds `packages/shared` (zod contracts, day-key and streak math)                                                       | One contract for client and server; pure logic testable in Node                                        |
+| C3  | Write path becomes state-based ops via batched `POST /v1/sync/push` plus cursor `GET /v1/sync/pull`, replacing `POST /v1/logs` | A toggle is not idempotent; v1 had no way to receive other devices' changes or restore after reinstall |
+| C4  | Habit IDs are client UUIDv7; logs keyed by `(habit_id, day_key)`; LWW on `min(client_updated_at, received_at)`                 | "Client UUID + day-key" collides across devices; a fast clock could win every conflict                 |
+| C5  | Future guard is `day_key > server UTC date + 1 day`                                                                            | "Reject future" measured in UTC rejects real logs from users ahead of UTC (Nigeria, 00:00 to 01:00)    |
+| C6  | Client keeps full history in a per-user SQLite file, not a 7-day window                                                        | Streaks longer than 7 days need it                                                                     |
+| C7  | New invariant: auth expiry pauses sync but never blocks logging                                                                | Clerk's free production plan caps sessions at 7 days (D1)                                              |
+| C8  | No custom native code in v1; iOS verified in Expo Go until D2 is decided                                                       | Linux-only development; installing iOS builds needs a paid Apple account                               |
+| C9  | CI applies migrations, then triggers Render via deploy hook; Render auto-deploy off                                            | Code never runs against an unmigrated schema                                                           |
+| C10 | Test databases are PGlite (API) and better-sqlite3 (client SQL); auth tested with a local keypair instead of a mocked JWKS     | Real SQL and real token verification, no network                                                       |
+| C11 | Definition of done and non-negotiable rules tightened (below)                                                                  | Guard rails for cheap-model work                                                                       |
 
 ---
 
@@ -42,6 +43,7 @@ Who uses it and what they must never experience:
 Students and individuals building routines without bloated productivity tools. They must never experience friction or data loss: a logged habit that disappears (bad sync, reinstall, sign-out, new phone), a tap that waits on the network, or being forced to sign in again and again.
 
 Definition of done for v1:
+
 - Functional: Google sign-in; create and archive habits; tick today and any of the last 7 days; 7-day history and current streak; everything works offline.
 - Quality: invariants I1 to I5 hold; the required test cases (ARCHITECTURE 4.3) and CI gates (4.4) are green; no red screens and clean Metro logs during device checks; Claude has reviewed every phase diff.
 - Verification: all Phase 1 to 5 criteria met on Android and iOS (iOS path per D2).
@@ -54,6 +56,7 @@ Definition of done for v1:
 Summary only. Data model, contract and rationale: `docs/ARCHITECTURE.md`.
 
 Invariants:
+
 - I1 A tap is committed to local SQLite (row + outbox op, one transaction) before the UI reflects it.
 - I2 Logging and viewing never wait on the network.
 - I3 Every server write is idempotent; replays change nothing.
@@ -75,6 +78,7 @@ Domain: daily yes/no habits only. History is the 7 local day-keys ending today. 
 API contract: REST, JSON, `/v1`, `Authorization: Bearer <Clerk session JWT>`, zod schemas in `packages/shared`, problem+json errors. Endpoints: `GET /v1/health`, `GET /v1/me`, `POST /v1/sync/push`, `GET /v1/sync/pull`.
 
 Language and framework: TypeScript strict everywhere.
+
 - Client: Expo (managed, SDK pinned, Expo Go compatible, `ios/` and `android/` generated and never committed), expo-router, `@clerk/expo`, expo-secure-store, expo-sqlite, expo-network.
 - Server: Fastify 5 on Node 24, zod, Drizzle, pg, `@clerk/backend` (networkless `verifyToken`).
 - Monorepo: npm workspaces with `apps/mobile`, `apps/api`, `packages/shared`.
@@ -88,6 +92,7 @@ Testing: Vitest. PGlite and better-sqlite3 as test databases. Auth tested with a
 Hosting: API on Render free web service, auto-deploy off, deployed by CI through a deploy hook after migrations. Mobile via EAS. No containers in v1.
 
 Trade-offs accepted:
+
 - Render and Neon cold starts (the first request can take about a minute); absorbed by I2 and a 75 s first-request timeout.
 - LWW can drop one of two edits made on two devices for the same habit and day; fine for a boolean.
 - Client clocks can be wrong; mitigated by capping the effective timestamp at `received_at` and the UTC+1 day guard.
@@ -119,11 +124,11 @@ Out of v1 (do not build): reminders and push notifications (n8n candidate), Maes
 
 ## 🟢 WORKING: Open Decisions (JAM)
 
-| ID | Decision | Options | Recommendation | Needed by |
-|---|---|---|---|---|
-| D1 | Session lifetime | (a) accept weekly Google re-sign-in, softened by I4; (b) paid Clerk plan; (c) change auth provider post-v1 | (a) for v1 | Phase 5 |
-| D2 | iOS path without a Mac | (a) Apple Developer Program, EAS iOS builds, TestFlight; (b) Expo Go only for v1 | (b), unless you already pay for Apple | Phase 5 |
-| D3 | Domain for the Clerk production instance | Any domain with DNS access | Buy or reuse one before Phase 5 | Phase 5 |
+| ID  | Decision                                 | Options                                                                                                    | Recommendation                        | Needed by |
+| --- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------- | --------- |
+| D1  | Session lifetime                         | (a) accept weekly Google re-sign-in, softened by I4; (b) paid Clerk plan; (c) change auth provider post-v1 | (a) for v1                            | Phase 5   |
+| D2  | iOS path without a Mac                   | (a) Apple Developer Program, EAS iOS builds, TestFlight; (b) Expo Go only for v1                           | (b), unless you already pay for Apple | Phase 5   |
+| D3  | Domain for the Clerk production instance | Any domain with DNS access                                                                                 | Buy or reuse one before Phase 5       | Phase 5   |
 
 ---
 
@@ -141,14 +146,14 @@ Out of v1 (do not build): reminders and push notifications (n8n candidate), Maes
 
 ## 🟢 WORKING: Model Routing For This Project
 
-| Role | Model |
-|---|---|
-| Planner and reviewer (reviews every phase diff) | Claude |
-| Default muscle | Qwen3-Coder-Next (OpenRouter) |
-| Backup muscle | DeepSeek V4 Flash |
-| Escalation (hard, well-defined bugs, only when Claude says so) | Kimi K3 |
-| Local muscle | None (no GPU) |
-| Harness | DeepSeek Harness (dsh) |
+| Role                                                           | Model                         |
+| -------------------------------------------------------------- | ----------------------------- |
+| Planner and reviewer (reviews every phase diff)                | Claude                        |
+| Default muscle                                                 | Qwen3-Coder-Next (OpenRouter) |
+| Backup muscle                                                  | DeepSeek V4 Flash             |
+| Escalation (hard, well-defined bugs, only when Claude says so) | Kimi K3                       |
+| Local muscle                                                   | None (no GPU)                 |
+| Harness                                                        | DeepSeek Harness (dsh)        |
 
 ---
 
@@ -156,21 +161,21 @@ Out of v1 (do not build): reminders and push notifications (n8n candidate), Maes
 
 Full scope and criteria: ARCHITECTURE section 5.
 
-| Phase | Goal | Verification criteria (summary) | Status |
-|---|---|---|---|
-| 1 | Foundation and auth: monorepo, CI, `/v1/health`, `/v1/me`, Google sign-in | Auth tests green; CI green, and red on a failing-test PR; sign-in survives force-quit on Android and iOS; no env files tracked | open (blocked: OpenRouter credits; CS-2 pending) |
-| 2 | Server data plane: schema, migrations, push and pull | Server cases 1 to 9 green on PGlite; migration applies to Neon `dev` | not started |
-| 3 | Local store, sync engine, minimal UI | Client cases 10 to 16 green; airplane-mode script gives exactly 2 habits and 2 logs; reinstall restores data | not started |
-| 4 | 7-day history and streaks | Domain cases 17 to 20 green; grid matches Neon; timezone change keeps ticks on their days | not started |
-| 5 | Production | Prod build signs in, logs, shows history; logs sync after a cold start; rollback drill; no secrets anywhere | not started (needs D1, D2, D3) |
+| Phase | Goal                                                                      | Verification criteria (summary)                                                                                                | Status                                           |
+| ----- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| 1     | Foundation and auth: monorepo, CI, `/v1/health`, `/v1/me`, Google sign-in | Auth tests green; CI green, and red on a failing-test PR; sign-in survives force-quit on Android and iOS; no env files tracked | open (blocked: OpenRouter credits; CS-2 pending) |
+| 2     | Server data plane: schema, migrations, push and pull                      | Server cases 1 to 9 green on PGlite; migration applies to Neon `dev`                                                           | not started                                      |
+| 3     | Local store, sync engine, minimal UI                                      | Client cases 10 to 16 green; airplane-mode script gives exactly 2 habits and 2 logs; reinstall restores data                   | not started                                      |
+| 4     | 7-day history and streaks                                                 | Domain cases 17 to 20 green; grid matches Neon; timezone change keeps ticks on their days                                      | not started                                      |
+| 5     | Production                                                                | Prod build signs in, logs, shows history; logs sync after a cold start; rollback drill; no secrets anywhere                    | not started (needs D1, D2, D3)                   |
 
 ---
 
 ## 🟢 WORKING: Decision Log
 
-| Date | Decision | Status |
-|---|---|---|
-| 2026-09-10 | Architecture v1 signed off and LOCKED | approved |
+| Date       | Decision                                     | Status          |
+| ---------- | -------------------------------------------- | --------------- |
+| 2026-09-10 | Architecture v1 signed off and LOCKED        | approved        |
 | 2026-09-11 | Architecture v2: change set CS-2 (C1 to C11) | approved by JAM |
 
 ---
@@ -186,6 +191,7 @@ Ideas: (brainstorm session pending)
 ## Skills for this project (the Addy Osmani atomic pattern)
 
 Keep a `skills/` folder in the repo and reference these in the harness:
+
 - workspace_inspection: read-only map of the relevant files before any edit.
 - atomic_modification: one function or module per change.
 - contract_first: change `packages/shared` schemas and their tests before any code that uses them.

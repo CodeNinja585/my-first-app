@@ -1,0 +1,20 @@
+{
+  "name": "@app/api",
+  "version": "1.0.0",
+  "main": "./dist/server.js",
+  "scripts": {
+    "build": "tsc --build",
+    "start": "node dist/server.js",
+    "dev": "tsc --build --watch",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@clerk/backend": "^1.20.2",
+    "fastify": "^5.2.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "jose": "^5.9.0"
+  }
+}

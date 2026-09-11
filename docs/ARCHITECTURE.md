@@ -7,13 +7,13 @@ Every change against v1 is listed as change set CS-2 in `my-first-app.md` and ne
 
 Every decision below exists to protect these five. A change that breaks one is rejected, whatever else it improves.
 
-| ID | Invariant | Protects against |
-|---|---|---|
-| I1 | A tap is committed to local SQLite (row + outbox op, one transaction) before the UI reflects it. | Lost logs on crash or force-quit |
-| I2 | Logging and viewing never wait on the network. | Friction, Render cold starts |
-| I3 | Every server write is idempotent: replaying any op any number of times yields the same state. | Duplicates from retries |
-| I4 | Auth expiry pauses sync. It never blocks logging and never deletes local data. | Re-auth friction, data loss |
-| I5 | The server takes user identity only from the verified JWT `sub`, and checks ownership of every client-sent ID. | Cross-user writes (IDOR) |
+| ID  | Invariant                                                                                                      | Protects against                 |
+| --- | -------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| I1  | A tap is committed to local SQLite (row + outbox op, one transaction) before the UI reflects it.               | Lost logs on crash or force-quit |
+| I2  | Logging and viewing never wait on the network.                                                                 | Friction, Render cold starts     |
+| I3  | Every server write is idempotent: replaying any op any number of times yields the same state.                  | Duplicates from retries          |
+| I4  | Auth expiry pauses sync. It never blocks logging and never deletes local data.                                 | Re-auth friction, data loss      |
+| I5  | The server takes user identity only from the verified JWT `sub`, and checks ownership of every client-sent ID. | Cross-user writes (IDOR)         |
 
 ---
 
@@ -48,14 +48,14 @@ Modular monolith: each module owns its routes, schemas and queries. Modules call
 
 ### 1.2 State boundaries
 
-| State | Owner | Where it lives | Notes |
-|---|---|---|---|
-| Identity, sessions | Clerk | Clerk; token cached in SecureStore | API never stores credentials |
-| Canonical habits and logs | API | Neon | Source of truth |
-| Replica of the user's habits and logs | Client | Per-user SQLite, full history | Streaks longer than 7 days and offline reads need it |
-| Pending writes | Client | `outbox` table | Deleted only after the server acknowledges |
-| Sync cursor, last userId | Client | `meta` table, SecureStore | Cursor = last `server_version` applied |
-| Screen state | React | Component state | No global state library in v1 |
+| State                                 | Owner  | Where it lives                     | Notes                                                |
+| ------------------------------------- | ------ | ---------------------------------- | ---------------------------------------------------- |
+| Identity, sessions                    | Clerk  | Clerk; token cached in SecureStore | API never stores credentials                         |
+| Canonical habits and logs             | API    | Neon                               | Source of truth                                      |
+| Replica of the user's habits and logs | Client | Per-user SQLite, full history      | Streaks longer than 7 days and offline reads need it |
+| Pending writes                        | Client | `outbox` table                     | Deleted only after the server acknowledges           |
+| Sync cursor, last userId              | Client | `meta` table, SecureStore          | Cursor = last `server_version` applied               |
+| Screen state                          | React  | Component state                    | No global state library in v1                        |
 
 v1 said "cached 7-day window". Changed to full history because a streak longer than 7 days cannot be computed from 7 days, and a year of one habit is about 365 tiny rows.
 
@@ -79,6 +79,7 @@ Client (SQLite) mirrors `habits` and `habit_logs`, plus
 Local schema is versioned with `PRAGMA user_version`.
 
 Rules:
+
 - Habit IDs are generated on the device, so a habit created offline can be logged immediately.
 - Deleting a habit sets `archived_at` (a tombstone that syncs). No hard deletes in v1.
 - A log is state, not an event: `done` is true or false. Unticking writes `done = false`; it never deletes a row, so it syncs and replays safely.
@@ -122,30 +123,37 @@ Timeouts: 75 s for the first request after launch (covers a Render cold start), 
 
 REST, JSON, versioned under `/v1`. Request and response schemas are zod schemas in `packages/shared`: the API validates with them, the client is typed by them. Errors use `application/problem+json` (RFC 9457).
 
-| Method and path | Auth | Request | 200 response | Other statuses |
-|---|---|---|---|---|
-| `GET /v1/health` | none | none | `{ status: "ok", version }`, no DB call | none |
-| `GET /v1/me` | Bearer | none | `{ userId }` | 401 |
-| `POST /v1/sync/push` | Bearer | `{ ops: Op[] }`, 1 to 100 ops | `{ results: Result[] }`, one per op, same order | 400 schema, 401, 413 over 100 ops, 429 |
-| `GET /v1/sync/pull` | Bearer | `?cursor=<int>&limit=<1..500>` | `{ habits, logs, cursor, hasMore }` | 400, 401, 429 |
+| Method and path      | Auth   | Request                        | 200 response                                    | Other statuses                         |
+| -------------------- | ------ | ------------------------------ | ----------------------------------------------- | -------------------------------------- |
+| `GET /v1/health`     | none   | none                           | `{ status: "ok", version }`, no DB call         | none                                   |
+| `GET /v1/me`         | Bearer | none                           | `{ userId }`                                    | 401                                    |
+| `POST /v1/sync/push` | Bearer | `{ ops: Op[] }`, 1 to 100 ops  | `{ results: Result[] }`, one per op, same order | 400 schema, 401, 413 over 100 ops, 429 |
+| `GET /v1/sync/pull`  | Bearer | `?cursor=<int>&limit=<1..500>` | `{ habits, logs, cursor, hasMore }`             | 400, 401, 429                          |
 
 ```ts
 type Op =
-  | { opId: string; type: "habit.upsert";
-      habit: { id: string; name: string; archivedAt: string | null; clientUpdatedAt: string } }
-  | { opId: string; type: "log.upsert";
-      log: { habitId: string; dayKey: string; done: boolean; clientUpdatedAt: string } };
+  | {
+      opId: string;
+      type: 'habit.upsert';
+      habit: { id: string; name: string; archivedAt: string | null; clientUpdatedAt: string };
+    }
+  | {
+      opId: string;
+      type: 'log.upsert';
+      log: { habitId: string; dayKey: string; done: boolean; clientUpdatedAt: string };
+    };
 
 type Result =
-  | { opId: string; status: "applied" }
-  | { opId: string; status: "stale"; row: HabitRow | LogRow }   // canonical server state
-  | { opId: string; status: "rejected"; code: "not_found" | "day_key_in_future" };
+  | { opId: string; status: 'applied' }
+  | { opId: string; status: 'stale'; row: HabitRow | LogRow } // canonical server state
+  | { opId: string; status: 'rejected'; code: 'not_found' | 'day_key_in_future' };
 ```
 
 - A schema-invalid batch is rejected whole (400). A valid batch is applied op by op, so one bad op cannot block the queue behind it.
 - Pull merges both tables by `server_version`, returns the first `limit` rows, and sets `cursor` to the last returned `server_version`. A log can never precede its habit because the habit's insert always has the lower version.
 
 ### Engineering trade-offs (pillar 1)
+
 - The sync endpoints are RPC-shaped inside a REST API. We give up resource URLs to get one round trip per 100 ops on mobile data, and one cold start per batch instead of one per op.
 - Last-write-wins silently drops one of two edits made on two devices for the same habit and day. Fine for a boolean. Must be revisited the day a log gains notes or counts.
 - A global sequence as the pull cursor can, in theory, skip a row whose transaction committed late. Per-user write concurrency is near zero in v1. If it ever bites: pull with a small overlap and rely on idempotent apply.
@@ -156,32 +164,33 @@ type Result =
 
 ## 2. Tech stack with trade-offs
 
-| Tool | Why best here | What we sacrifice |
-|---|---|---|
-| TypeScript, strict, everywhere | One language; shared zod contracts compile into both apps | A server build step; strictness slows early scaffolding |
-| npm workspaces: `apps/mobile`, `apps/api`, `packages/shared` | No extra tool; Expo supports monorepos natively | No task caching (Turborepo, Nx); CI runs everything every time |
-| Expo, managed, pinned to the newest SDK supported by both Expo Go and @clerk/expo; expo-router | One codebase; EAS builds from Linux; OTA-ready | Tied to Expo's SDK cadence; no custom native modules in v1 |
-| @clerk/expo (Core 3) | Google OAuth and sessions without running auth. Replaces @clerk/clerk-expo, which is deprecated | Vendor lock-in; free production plan fixes session maximum lifetime (D1); production needs a domain (D3) |
-| expo-secure-store | Encrypted token cache on both platforms | Small value size limits; not for app data |
-| expo-sqlite | Durable local store with transactions; works in Expo Go | Hand-written SQL on the client, so it is tested against real SQLite (4.2) |
-| expo-network | Connectivity events to trigger sync | "Connected" does not mean "API reachable"; backoff still required |
-| Fastify 5 on Node 24 | Schema-first, plugin encapsulation maps to modules, `inject()` makes route tests fast | Smaller ecosystem than Express |
-| zod + fastify-type-provider-zod | One schema gives validation, server types and client types | Per-request validation cost (negligible here) |
-| Drizzle ORM + drizzle-kit | SQL-shaped, typed, generated migrations, a PGlite driver for tests | Younger than Prisma; migration tooling is less forgiving |
-| pg (node-postgres) to the Neon pooled endpoint | A long-lived Render process suits a normal pool | Migrations must use the direct (non-pooled) URL |
-| Neon Postgres | Real Postgres, free tier, branches per environment | Scale-to-zero adds its own wake delay on top of Render's |
-| @clerk/backend `verifyToken` with `CLERK_JWT_KEY` | Networkless JWT verification: no JWKS fetch on cold start, testable with a local key | Key rotation means an env update and redeploy |
-| Vitest with v8 coverage | Fast, TS-native, one runner for api, shared and mobile logic | No React Native component tests in v1 |
-| PGlite (tests only) | In-process Postgres: real SQL semantics, no Docker, no network | Not identical to Neon (extensions, pooling); Phase 5 smoke covers the gap |
-| better-sqlite3 (tests only) | Runs the client's real SQL in Node | Native addon build in CI; SQLite version may differ slightly from the phone's |
-| jose (tests only) | Mints test JWTs with a local RSA key | Clerk's claim shape is mirrored by hand |
-| ESLint (flat) + typescript-eslint + Prettier | Enforces import boundaries and keeps cheap-model diffs clean | Config upkeep |
-| GitHub Actions | Free at this scale; runs gates and the deploy pipeline | YAML upkeep, runner minutes |
-| gitleaks | Blocks committed secrets | Occasional false positives need an allowlist entry |
-| Render, free web service | Git-based deploys, dashboard env vars, deploy hooks | Spins down when idle; slow first request |
-| EAS Build | iOS and Android builds from Linux, managed credentials | Free build quota and queues; installing iOS builds on a device needs a paid Apple account (D2) |
+| Tool                                                                                           | Why best here                                                                                   | What we sacrifice                                                                                        |
+| ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| TypeScript, strict, everywhere                                                                 | One language; shared zod contracts compile into both apps                                       | A server build step; strictness slows early scaffolding                                                  |
+| npm workspaces: `apps/mobile`, `apps/api`, `packages/shared`                                   | No extra tool; Expo supports monorepos natively                                                 | No task caching (Turborepo, Nx); CI runs everything every time                                           |
+| Expo, managed, pinned to the newest SDK supported by both Expo Go and @clerk/expo; expo-router | One codebase; EAS builds from Linux; OTA-ready                                                  | Tied to Expo's SDK cadence; no custom native modules in v1                                               |
+| @clerk/expo (Core 3)                                                                           | Google OAuth and sessions without running auth. Replaces @clerk/clerk-expo, which is deprecated | Vendor lock-in; free production plan fixes session maximum lifetime (D1); production needs a domain (D3) |
+| expo-secure-store                                                                              | Encrypted token cache on both platforms                                                         | Small value size limits; not for app data                                                                |
+| expo-sqlite                                                                                    | Durable local store with transactions; works in Expo Go                                         | Hand-written SQL on the client, so it is tested against real SQLite (4.2)                                |
+| expo-network                                                                                   | Connectivity events to trigger sync                                                             | "Connected" does not mean "API reachable"; backoff still required                                        |
+| Fastify 5 on Node 24                                                                           | Schema-first, plugin encapsulation maps to modules, `inject()` makes route tests fast           | Smaller ecosystem than Express                                                                           |
+| zod + fastify-type-provider-zod                                                                | One schema gives validation, server types and client types                                      | Per-request validation cost (negligible here)                                                            |
+| Drizzle ORM + drizzle-kit                                                                      | SQL-shaped, typed, generated migrations, a PGlite driver for tests                              | Younger than Prisma; migration tooling is less forgiving                                                 |
+| pg (node-postgres) to the Neon pooled endpoint                                                 | A long-lived Render process suits a normal pool                                                 | Migrations must use the direct (non-pooled) URL                                                          |
+| Neon Postgres                                                                                  | Real Postgres, free tier, branches per environment                                              | Scale-to-zero adds its own wake delay on top of Render's                                                 |
+| @clerk/backend `verifyToken` with `CLERK_JWT_KEY`                                              | Networkless JWT verification: no JWKS fetch on cold start, testable with a local key            | Key rotation means an env update and redeploy                                                            |
+| Vitest with v8 coverage                                                                        | Fast, TS-native, one runner for api, shared and mobile logic                                    | No React Native component tests in v1                                                                    |
+| PGlite (tests only)                                                                            | In-process Postgres: real SQL semantics, no Docker, no network                                  | Not identical to Neon (extensions, pooling); Phase 5 smoke covers the gap                                |
+| better-sqlite3 (tests only)                                                                    | Runs the client's real SQL in Node                                                              | Native addon build in CI; SQLite version may differ slightly from the phone's                            |
+| jose (tests only)                                                                              | Mints test JWTs with a local RSA key                                                            | Clerk's claim shape is mirrored by hand                                                                  |
+| ESLint (flat) + typescript-eslint + Prettier                                                   | Enforces import boundaries and keeps cheap-model diffs clean                                    | Config upkeep                                                                                            |
+| GitHub Actions                                                                                 | Free at this scale; runs gates and the deploy pipeline                                          | YAML upkeep, runner minutes                                                                              |
+| gitleaks                                                                                       | Blocks committed secrets                                                                        | Occasional false positives need an allowlist entry                                                       |
+| Render, free web service                                                                       | Git-based deploys, dashboard env vars, deploy hooks                                             | Spins down when idle; slow first request                                                                 |
+| EAS Build                                                                                      | iOS and Android builds from Linux, managed credentials                                          | Free build quota and queues; installing iOS builds on a device needs a paid Apple account (D2)           |
 
 ### Engineering trade-offs (pillar 2)
+
 - Boring, typed, SQL-shaped tools were chosen over BaaS sync (Firebase, PowerSync, Supabase realtime). We own sync correctness, which is why pillar 4 spends most of its budget there.
 - Staying Expo Go compatible keeps iOS testable without a Mac or an Apple account. The cost: no native Google one-tap and no Clerk native components until D2 is settled.
 
@@ -190,20 +199,22 @@ type Result =
 ## 3. Infrastructure
 
 ### 3.1 Containerisation
+
 None in v1. Render's native Node runtime builds from the repo. Add a Dockerfile only when moving hosts or when a system dependency is needed that the native runtime lacks.
 
 ### 3.2 Environments
 
-| | Local dev | CI | Production |
-|---|---|---|---|
-| API | `npm run dev -w @app/api` on the laptop | Fastify `inject()` inside Vitest | Render web service |
-| Database | Neon `dev` branch | PGlite, in process | Neon `main` branch |
-| Clerk | Development instance | Local test keypair, no Clerk | Production instance (needs D3) |
-| Mobile | Expo Go on phones, API via laptop LAN IP | none | EAS build, `production` profile |
+|          | Local dev                                | CI                               | Production                      |
+| -------- | ---------------------------------------- | -------------------------------- | ------------------------------- |
+| API      | `npm run dev -w @app/api` on the laptop  | Fastify `inject()` inside Vitest | Render web service              |
+| Database | Neon `dev` branch                        | PGlite, in process               | Neon `main` branch              |
+| Clerk    | Development instance                     | Local test keypair, no Clerk     | Production instance (needs D3)  |
+| Mobile   | Expo Go on phones, API via laptop LAN IP | none                             | EAS build, `production` profile |
 
 No staging in v1. The Neon `dev` branch plus the local API is the rehearsal environment.
 
 ### 3.3 Hosting (Render)
+
 - Build `npm ci && npm run build -w @app/api`. Start `node apps/api/dist/server.js`.
 - Listen on `0.0.0.0:$PORT`. Health check path `/v1/health`, which never touches the DB, so health checks never wake Neon.
 - Node pinned with `engines` and `.nvmrc` (24.x).
@@ -212,25 +223,28 @@ No staging in v1. The Neon `dev` branch plus the local API is the rehearsal envi
 - No keep-alive pinger: it would also keep Neon's compute awake. I2 absorbs cold starts instead.
 
 ### 3.4 Database migrations
+
 - `drizzle-kit generate` output is committed in the same PR as the schema change.
 - On merge to `main`, CI runs: gates, then `drizzle-kit migrate` with `DATABASE_URL_DIRECT`, then the deploy hook, then `curl /v1/health` as a smoke check.
 - Expand and contract only: every migration must work with the API version currently running. Renames and drops ship one release after the code stops using the old shape.
 
 ### 3.5 Configuration
+
 Each app has one `env.ts` that parses `process.env` with zod at startup and exits non-zero, naming every missing or invalid key. No other file reads `process.env`.
 
-| Variable | Used by | Secret | Set in |
-|---|---|---|---|
-| `DATABASE_URL` (pooled) | api | yes | `apps/api/.env.local`, Render |
-| `DATABASE_URL_DIRECT` (migrations) | CI, local migrate | yes | `apps/api/.env.local`, GitHub Actions secrets |
-| `CLERK_SECRET_KEY` | api | yes | `apps/api/.env.local`, Render |
-| `CLERK_JWT_KEY` (PEM public key) | api | no, still env-managed | `apps/api/.env.local`, Render |
-| `PORT`, `LOG_LEVEL`, `NODE_ENV` | api | no | Render, defaults |
-| `RENDER_DEPLOY_HOOK_URL` | CI | yes | GitHub Actions secrets |
-| `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | mobile | no | `apps/mobile/.env.local`, EAS environment variables |
-| `EXPO_PUBLIC_API_URL` | mobile | no | `apps/mobile/.env.local`, EAS environment variables |
+| Variable                            | Used by           | Secret                | Set in                                              |
+| ----------------------------------- | ----------------- | --------------------- | --------------------------------------------------- |
+| `DATABASE_URL` (pooled)             | api               | yes                   | `apps/api/.env.local`, Render                       |
+| `DATABASE_URL_DIRECT` (migrations)  | CI, local migrate | yes                   | `apps/api/.env.local`, GitHub Actions secrets       |
+| `CLERK_SECRET_KEY`                  | api               | yes                   | `apps/api/.env.local`, Render                       |
+| `CLERK_JWT_KEY` (PEM public key)    | api               | no, still env-managed | `apps/api/.env.local`, Render                       |
+| `PORT`, `LOG_LEVEL`, `NODE_ENV`     | api               | no                    | Render, defaults                                    |
+| `RENDER_DEPLOY_HOOK_URL`            | CI                | yes                   | GitHub Actions secrets                              |
+| `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | mobile            | no                    | `apps/mobile/.env.local`, EAS environment variables |
+| `EXPO_PUBLIC_API_URL`               | mobile            | no                    | `apps/mobile/.env.local`, EAS environment variables |
 
 ### 3.6 Secrets handling
+
 - `.env*` is git-ignored except `.env.example` (names only, committed). Each app keeps its own `.env.local`; Expo only loads env files from `apps/mobile`, not the repo root.
 - AI models never open, read or print a `.env.local` file: the harness would send its contents to the model provider. Models only write `.env.example` files.
 - Schema changes reach Neon only through committed migrations. `drizzle-kit push` is never run against `main`.
@@ -239,11 +253,13 @@ Each app has one `env.ts` that parses `process.env` with zod at startup and exit
 - Dev and prod keys never mix: the API env module rejects an `sk_live_` key unless `NODE_ENV=production`, and an `sk_test_` key when it is.
 
 ### 3.7 Observability
+
 - Fastify's pino JSON logs go to Render. Redact the `authorization` and `cookie` headers. Every request logs request id, userId (after auth), route, status and duration.
 - Each push logs its batch size and the count per result status. This is the first place to look for any data-loss report.
 - No APM or crash reporter in v1 (Sentry is post-v1). Device crashes are caught by each phase's manual checks.
 
 ### Engineering trade-offs (pillar 3)
+
 - CI-driven migrations plus deploy hooks add pipeline steps but remove the race between auto-deploy and schema changes.
 - Without staging, production is the first time code meets Neon `main`. Expand-and-contract migrations and Render's one-click rollback are the mitigation.
 - Networkless JWT verification trades automatic key rotation for zero network dependency per request.
@@ -254,22 +270,25 @@ Each app has one `env.ts` that parses `process.env` with zod at startup and exit
 
 ### 4.1 Pyramid (by test count)
 
-| Layer | Share | Runs on | Covers |
-|---|---|---|---|
-| Unit | about 70% | Vitest, every PR | Day-keys, streaks, LWW decision, zod contracts, sync engine state machine, env parsing |
+| Layer       | Share     | Runs on                                                               | Covers                                                                                   |
+| ----------- | --------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Unit        | about 70% | Vitest, every PR                                                      | Day-keys, streaks, LWW decision, zod contracts, sync engine state machine, env parsing   |
 | Integration | about 25% | Vitest with Fastify `inject()` + PGlite; client SQL on better-sqlite3 | Routes end to end through auth, validation and SQL; outbox SQL; migrations apply cleanly |
-| E2E | about 5% | Scripted manual device checks per phase (Maestro is post-v1) | Real Clerk, real phones, real network loss |
+| E2E         | about 5%  | Scripted manual device checks per phase (Maestro is post-v1)          | Real Clerk, real phones, real network loss                                               |
 
 ### 4.2 Mocking strategy
+
 - Never mock the database or the ORM. API tests run on PGlite with the real migrations applied. Client storage tests run the real SQL on better-sqlite3.
 - Never mock auth. Tests generate an RSA keypair, set `CLERK_JWT_KEY` to its public key, and mint tokens with jose, so the real `verifyToken` runs.
 - Fake only the ports a test cannot own, and inject them (no module mocking): `ApiClient` (sync engine network), `now()`, `todayKey()`, `getToken()`.
 - `packages/shared` and `apps/mobile/src/sync` must not import `react-native` or `expo-*` (ESLint `no-restricted-imports`). That rule is what makes them testable in Node.
 
 ### 4.3 Required test cases: the "never lose data" suite
+
 These are acceptance tests. Models may add tests; they must never weaken or delete these.
 
 Server:
+
 1. The same push batch sent twice leaves identical rows and row counts.
 2. An op older than the stored `clientUpdatedAt` returns `stale` with the canonical row; the stored row is unchanged.
 3. A future `clientUpdatedAt` is stored as `received_at`.
@@ -280,23 +299,14 @@ Server:
 8. 101 ops returns 413. Missing, expired, malformed or wrong-key tokens return 401.
 9. The API refuses to boot without `CLERK_SECRET_KEY`, and with an `sk_live_` key outside production.
 
-Client sync engine:
-10. A crash after the server acknowledged but before the local delete: the resend creates no duplicates.
-11. A `stale` result writes the returned canonical row locally.
-12. 401 triggers exactly one forced token refresh, then pauses with every op retained.
-13. 5xx and timeouts back off; ops are retained and their order preserved.
-14. A rejected op moves to `failed`; the ops behind it continue.
-15. Pull does not overwrite an entity that has a pending op.
-16. Sign-out with pending ops is refused unless the user explicitly discards them.
+Client sync engine: 10. A crash after the server acknowledged but before the local delete: the resend creates no duplicates. 11. A `stale` result writes the returned canonical row locally. 12. 401 triggers exactly one forced token refresh, then pauses with every op retained. 13. 5xx and timeouts back off; ops are retained and their order preserved. 14. A rejected op moves to `failed`; the ops behind it continue. 15. Pull does not overwrite an entity that has a pending op. 16. Sign-out with pending ops is refused unless the user explicitly discards them.
 
-Domain:
-17. An unticked today does not break the streak; a missed past day does.
-18. Streaks across a month end, a year end and a DST change day.
-19. Day-keys come from the local calendar: 00:30 at UTC+1 is local today, not UTC yesterday.
-20. An archived habit leaves the list and keeps its history.
+Domain: 17. An unticked today does not break the streak; a missed past day does. 18. Streaks across a month end, a year end and a DST change day. 19. Day-keys come from the local calendar: 00:30 at UTC+1 is local today, not UTC yesterday. 20. An archived habit leaves the list and keeps its history.
 
 ### 4.4 CI quality gates
+
 On every PR, all required to merge. `main` is protected: no direct pushes, and harness work always arrives as a PR.
+
 1. `npm ci` (lockfile must be current)
 2. `tsc -b` across all workspaces
 3. `eslint . --max-warnings 0` and `prettier --check .`
@@ -308,6 +318,7 @@ On every PR, all required to merge. `main` is protected: no direct pushes, and h
 On merge to `main`: the gates, then migrate, deploy hook, smoke check (3.4).
 
 ### Engineering trade-offs (pillar 4)
+
 - No component tests, so UI bugs are caught on devices, not in CI. Acceptable because the UI is thin and all logic lives in tested pure modules.
 - PGlite and better-sqlite3 are near-real, not real. Phase 5 runs push and pull against Neon once to close the gap.
 - Coverage thresholds sit only where a bug means data loss, so cheap models are not pushed into writing filler tests elsewhere.
@@ -319,43 +330,53 @@ On merge to `main`: the gates, then migrate, deploy hook, smoke check (3.4).
 A phase is done only when every Verification Criterion is met and Claude has reviewed the phase diff.
 
 ### Phase 1: Foundation and auth
+
 Scope: repo, monorepo, strict TS, lint, Vitest, CI gates 1 to 4, 6 and 7. API env module, `/v1/health`, auth verifier, `/v1/me` (no database yet). Mobile ClerkProvider with SecureStore token cache, Google sign-in via browser SSO, and a screen that calls `/v1/me` and shows the userId.
 
 Verification criteria:
+
 - Tests: `/v1/health` returns 200; `/v1/me` returns 200 with a valid test token and 401 with a missing, expired or wrong-key token; server case 9 passes.
 - CI is green on a PR, and red on a PR that contains a deliberately failing test (proves the gate works).
 - Device, Android and iOS in Expo Go: Google sign-in completes, the userId shows, and after a force-quit and reopen the user is still signed in.
 - `git ls-files | grep -i env` lists only `.env.example`; gitleaks is clean.
 
 ### Phase 2: Server data plane
+
 Scope: Drizzle schema (`users`, `habits`, `habit_logs`, `sync_seq`), first migrations, `POST /v1/sync/push`, `GET /v1/sync/pull`, rate limiting, CI gate 5.
 
 Verification criteria:
+
 - Tests: server cases 1 to 9 green on PGlite.
 - `drizzle-kit migrate` applies cleanly to the Neon `dev` branch (output pasted in the resume packet).
 - Manual: push and pull via curl against the local API using a development-instance token.
 
 ### Phase 3: Local store, sync engine, minimal UI
+
 Scope: per-user SQLite schema and migrations, outbox, sync engine and its triggers, create habit, tick today, pending and failed indicators, "Sign in to sync" banner, guarded sign-out.
 
 Verification criteria:
+
 - Tests: client cases 10 to 16 green, with the SQL running on better-sqlite3.
 - Device script: airplane mode on, create 2 habits, tick both, force-quit, reopen (both still ticked), airplane mode off. Within 30 s against a warm API, the Neon `dev` branch holds exactly 2 habits and 2 logs for this user.
 - Device script: uninstall, reinstall, sign in. Both habits and both ticks come back via pull.
 
 ### Phase 4: 7-day history and streaks
+
 Scope: a 7-day grid per habit, tap any visible day to toggle, current streak, archive habit.
 
 Verification criteria:
+
 - Tests: domain cases 17 to 20 green.
 - Device, Android and iOS: the grid matches Neon rows for a seeded 10-day history; after changing the phone's timezone by several hours, past ticks stay on their days.
 
 ### Phase 5: Production
+
 Prerequisites, blocked until JAM provides them: D1 and D2 decided, a domain (D3), a Google Cloud OAuth client for the Clerk production instance.
 
 Scope: Neon `main`; Render service with dashboard env vars and deploy hook; the `main` pipeline (migrate, deploy, smoke); Clerk production instance with Google credentials and the app's SSO redirect allowlisted; EAS `production` profile with its environment variables; Android internal build (EAS internal distribution, or the Play internal track if a Play account exists); iOS per D2.
 
 Verification criteria:
+
 - A fresh install of the production build signs in with Google on the production instance, creates a habit, ticks it and shows history.
 - After 20 minutes of API idle time, ticking is instant, and the log reaches Neon `main` within 90 s of reopening the app with no user action.
 - One Render rollback to the previous deploy is performed and the app still syncs.
