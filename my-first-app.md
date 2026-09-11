@@ -233,7 +233,7 @@ NEXT TASKS, IN ORDER (one at a time, one commit each):
 1. Repo init. In /home/don/The-final-beginning/Personal-projects/my-first-app, create .gitignore FIRST with: .env*,
    !.env.example, node_modules/, .expo/, dist/, coverage/, *.log, *.db,
    apps/mobile/ios/, apps/mobile/android/. Then git init. Add
-   docs/ARCHITECTURE.md (given). Stage my-first-app.md, .gitignore, docs/
+   docs/ARCHITECTURE.md (given). Stage my-first-app.md, .gitignore, docs/, skills/
    by explicit path and commit.
    Verify: `git check-ignore -v .env.local` prints a match;
    `git status --short` is empty.
