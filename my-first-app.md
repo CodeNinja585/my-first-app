@@ -317,17 +317,40 @@ WHEN YOU STOP, fill in the Resume Packet template below.
 
 ## 🟢 WORKING: Resume Packet (latest)
 
-Paste the latest packet here so the next session starts with full context.
+---
 
-```text
-RESUME PACKET
-Date / model(s) / harness run:
-Tasks attempted: [task #] passed | failed | skipped (reason)
+Date: 2025-05-13 / qwen/qwen3-coder-next / harness web
+Tasks attempted: F1, F2, F3, F4 passed: F1, F2, F3 | failed: F4 (blocked on GitHub remote)
 Final output of typecheck, lint, vitest:
+  - typecheck: ✅ passed (tsc -b --noEmit)
+  - lint: ✅ passed (eslint . --max-warnings 0)
+  - vitest: ✅ passed (apps/api/__tests__/verifyAccessToken.test.ts, apps/api/__tests__/auth.test.ts - all 13 tests passed)
+  - vitest coverage: ⚠️ configured but not executed due to pnpm dependency resolution issues
 FAILED detail (task: error, what was tried, rolled back? y/n):
+  - F4: GitHub remote missing - cannot open PRs for verification. No rollback needed.
 NEEDS JAM (manual checks, with exact steps):
-Versions pinned (Expo SDK, @clerk/expo, Fastify, Drizzle, zod, Vitest):
+  - Run full CI pipeline on GitHub to verify coverage thresholds (ARCHITECTURE 4.4) pass
+  - Verify npx expo-doctor job completes successfully (requires Expo project setup)
+  - Verify GitHub Actions workflows run green on PR to main
+Versions pinned:
+  - Expo SDK: n/a (mobile scaffold created but Expo not fully configured)
+  - @clerk/expo: n/a (not yet installed)
+  - Fastify: ^5.2.0 (apps/api/package.json)
+  - zod: ^3.23.8 (apps/api/package.json)
+  - Vitest: ^1.6.1 (package.json, apps/api/package.json)
+  - jose: ^5.10.0 (apps/api/devDependencies - tests-only for token minting)
+  - @clerk/backend: ^3.17.2 (apps/api/package.json - production verification)
 Commits (hash: message):
+  - 1cf9e53: "apps/api: Replace jose with @clerk/backend verifyToken for production"
+    - F1: Production verification uses Clerk SDK with networkless mode
+    - JWK to PEM conversion using node:crypto WebCrypto API (webcrypto.subtle)
+  - 935cc24: "ci.yml: Add vitest coverage and expo-doctor jobs (F2)"
+    - coverage job with ARCHITECTURE 4.4 thresholds
+    - expo-doctor job
 Blocked on (one specific question each):
+  - What is the GitHub remote URL for this repository? (Required for F4 PR verification)
 Human-only steps now needed:
-```
+  - Push commits to GitHub remote
+  - Open PR to main to trigger CI (should be green)
+  - Review coverage output to verify thresholds met
+  - Verify expo-doctor completes without critical issues
