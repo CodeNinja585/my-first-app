@@ -347,6 +347,7 @@ Commits (hash: message):
   - 935cc24: "ci.yml: Add vitest coverage and expo-doctor jobs (F2)"
     - coverage job with ARCHITECTURE 4.4 thresholds
     - expo-doctor job
+  - a933b59: "my-first-app.md: Fill Resume Packet section (F3)"
 Blocked on (one specific question each):
   - What is the GitHub remote URL for this repository? (Required for F4 PR verification)
 Human-only steps now needed:
