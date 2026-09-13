@@ -39,4 +39,14 @@ export default [
   {
     ignores: ['**/dist/**', '**/node_modules/**', '**/*.test.ts'],
   },
+  {
+    files: ['apps/**/*'],
+    languageOptions: {
+      globals: {
+        Buffer: 'readonly',
+        console: 'readonly',
+        process: 'readonly',
+      },
+    },
+  },
 ];
