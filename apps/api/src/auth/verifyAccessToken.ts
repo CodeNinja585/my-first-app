@@ -15,10 +15,10 @@ async function jwkToPem(jwk: { n: string; e: string; kty: string }): Promise<str
     'jwk',
     jwk,
     { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    true,  // extractable
+    true, // extractable
     ['verify']
   );
-  
+
   const spkiDer = await webcrypto.subtle.exportKey('spki', importedKey);
   const base64 = Buffer.from(spkiDer).toString('base64');
   const lines = [];
@@ -48,7 +48,7 @@ export async function verifyAccessToken(
     // Clerk's verifyToken expects PEM format for jwtKey
     // If the input is JWK format (starts with { or [), convert it to PEM
     let keyToUse = jwtKey;
-    
+
     if (jwtKey.startsWith('{') || jwtKey.startsWith('[')) {
       try {
         const jwk = JSON.parse(jwtKey);
