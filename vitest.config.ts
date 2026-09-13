@@ -11,6 +11,26 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       exclude: ['**/dist/**', '**/node_modules/**', '**/test/**', '**/*.config.*'],
+      thresholds: {
+        'apps/api': {
+          lines: 80,
+          branches: 80,
+          functions: 80,
+          statements: 80,
+        },
+        'apps/mobile/src/sync': {
+          lines: 90,
+          branches: 90,
+          functions: 90,
+          statements: 90,
+        },
+        'packages/shared': {
+          lines: 90,
+          branches: 90,
+          functions: 90,
+          statements: 90,
+        },
+      },
     },
   },
 });
