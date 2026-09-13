@@ -14,7 +14,7 @@ async function jwkToPem(jwk: { n: string; e: string; kty: string }): Promise<str
   const importedKey = await webcrypto.subtle.importKey(
     'jwk',
     jwk,
-    { name: 'RSA-PSS', hash: 'SHA-256' },
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
     true,  // extractable
     ['verify']
   );
