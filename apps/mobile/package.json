@@ -10,7 +10,7 @@
     "test": "echo \"No tests in mobile app yet\""
   },
   "dependencies": {
-    "expo": "^52.0.0",
+    "expo": "^54.0.0",
     "expo-sqlite": "~15.0.0",
     "expo-network": "~7.0.0",
     "expo-secure-store": "~14.0.0",
