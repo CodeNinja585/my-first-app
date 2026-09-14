@@ -1,22 +1,12 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Button } from 'react-native';
 import { useAuth, useSession } from '@clerk/expo';
 import { useRouter } from 'expo-router';
+import { env } from '../config/env';
 
-export function SignedInScreen() {
+export default function SignedInScreen() {
   const { isLoaded, isSignedIn, userId } = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoaded) {
-      return;
-    }
-
-    if (!isSignedIn || !userId) {
-      // User is not signed in, redirect to sign in screen
-      router.replace('/SignInScreen');
-    }
-  }, [isSignedIn, userId, isLoaded]);
 
   if (!isLoaded) {
     return (
@@ -26,10 +16,16 @@ export function SignedInScreen() {
     );
   }
 
+  if (!isSignedIn || !userId) {
+    router.replace('/SignInScreen');
+    return null;
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Signed In</Text>
       <Text style={styles.userId}>User ID: {userId}</Text>
+      <Button title="Sign out" onPress={() => router.push('/SignInScreen')} />
     </View>
   );
 }

@@ -1,17 +1,18 @@
 import { View, Text, Button, ActivityIndicator, StyleSheet } from 'react-native';
-import { useOAuth } from '@clerk/expo';
+import { useSSO } from '@clerk/expo';
 import { useState } from 'react';
 
 export function SignInScreen() {
-  const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' });
+  const { startSSOFlow } = useSSO();
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   const onGooglePress = async () => {
     try {
       setIsSigningIn(true);
-      const result = await startOAuthFlow();
+      const result = await startSSOFlow({
+        strategy: 'oauth_google',
+      });
 
-      // The result type may vary - just log it for now
       console.log('OAuth result:', result);
     } catch (error) {
       console.error('Google sign-in error:', error);
