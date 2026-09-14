@@ -71,7 +71,7 @@ Write path: tap -> one SQLite transaction (row + outbox op) -> UI updates -> syn
 
 Conflicts: ops carry state (`done` true or false; archive is a tombstone; nothing is hard-deleted). Last-write-wins per `(habit_id, day_key)` and per habit ID on `min(client_updated_at, received_at)`. Replays are no-ops.
 
-Day-keys: taken from the local calendar at tap time and never recomputed. The server rejects `day_key > UTC today + 1`.
+Day-keys: taken from the local calendar at tap time and never recomputed. The server rejects `day_key > server UTC date + 1`.
 
 Domain: daily yes/no habits only. History is the 7 local day-keys ending today. The streak ends today, or yesterday if today is not ticked yet.
 
@@ -112,13 +112,13 @@ Out of v1 (do not build): reminders and push notifications (n8n candidate), Maes
 4. Any change to a LOCKED section: stop, request JAM's approval, record it in the Decision Log.
 5. Never weaken, skip or delete a test to get green. The required cases in ARCHITECTURE 4.3 are untouchable.
 6. No new dependency unless it appears in the ARCHITECTURE pillar 2 table. Otherwise stop and ask. Record each added dependency's version in the resume packet.
-7. Contract first: an API change starts in `packages/shared` schemas and tests, then the implementation.
+7. Contract first: an API change starts in `packages/shared` schemas and their tests, then the implementation.
 8. Schema changes only through committed Drizzle migrations that work with the API version currently running. Never `drizzle-kit push` against `main`.
 9. Models never open, read or print any `.env.local` file (the harness would send it to the model provider). Models only write `.env.example` files.
 10. Never commit secrets. Never `git add .` or `git add -A`; stage explicit paths. Only non-secret `EXPO_PUBLIC_*` values may reach the app bundle.
 11. `packages/shared` and `apps/mobile/src/sync` never import `react-native` or `expo-*`.
 12. Manual (device) checks are never marked passed by a model. They are recorded as NEEDS JAM.
-13. Cost rule: bulk work runs on the cheap muscle model, not on Kimi K3 or Claude.
+13. Cost rule: bulk work runs on the cheap model, not on Kimi K3 or Claude.
 
 ---
 
@@ -163,7 +163,7 @@ Full scope and criteria: ARCHITECTURE section 5.
 
 | Phase | Goal                                                                      | Verification criteria (summary)                                                                                                | Status                                           |
 | ----- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| 1     | Foundation and auth: monorepo, CI, `/v1/health`, `/v1/me`, Google sign-in | Auth tests green; CI green, and red on a failing-test PR; sign-in survives force-quit on Android and iOS; no env files tracked | open (blocked: OpenRouter credits; CS-2 pending) |
+| 1     | Foundation and auth: monorepo, CI, `/v1/health`, `/v1/me`, Google sign-in | Auth tests green; CI green, and red on a failing-test PR; sign-in survives force-quit on Android and iOS                     | open (M-FIX directive)                           |
 | 2     | Server data plane: schema, migrations, push and pull                      | Server cases 1 to 9 green on PGlite; migration applies to Neon `dev`                                                           | not started                                      |
 | 3     | Local store, sync engine, minimal UI                                      | Client cases 10 to 16 green; airplane-mode script gives exactly 2 habits and 2 logs; reinstall restores data                   | not started                                      |
 | 4     | 7-day history and streaks                                                 | Domain cases 17 to 20 green; grid matches Neon; timezone change keeps ticks on their days                                      | not started                                      |
@@ -211,7 +211,7 @@ Run on 2026-09-11 (version 2). Output: `docs/ARCHITECTURE.md`. Re-run only for a
 The instruction set the harness and cheap models follow while Claude is not available. Claude rewrites it at the end of every working session. Most important block in this file.
 
 ```text
-=================== HANDOFF DIRECTIVE ===================
+==================== HANDOFF DIRECTIVE ====================
 Written by: Claude
 Date / session: 2026-09-11, architecture v2 session
 Current phase: Phase 1 of 5
@@ -319,42 +319,31 @@ WHEN YOU STOP, fill in the Resume Packet template below.
 
 ---
 
-Date: 2026-09-13 / qwen/qwen3-coder-next / harness web
-Tasks attempted: F1, F2, F3, F4
-passed: F1, F2, F3 | failed: F4 (blocked on GitHub remote)
-Final output of typecheck, lint, vitest:
-
+Date: 2026-09-14 / qwen/qwen3-coder-next / harness web
+Tasks attempted: M-FIX directive (fix/mobile-entry branch)
+passed: M1, M2, M3, M4 | failed: none
+Final output of typecheck, lint, format:check, vitest:
 - typecheck: ✅ passed (tsc -b --noEmit)
 - lint: ✅ passed (eslint . --max-warnings 0)
-- vitest: ✅ passed (apps/api/**tests**/verifyAccessToken.test.ts, apps/api/**tests**/auth.test.ts, packages/shared/**tests**/index.test.ts - all 31 tests passed)
-- vitest coverage: ✅ configured but not executed (no pnpm dependency resolution issues)
-  FAILED detail (task: error, what was tried, rolled back? y/n):
-- F4: GitHub remote missing - cannot open PRs for verification. No rollback needed.
-  NEEDS JAM (manual checks, with exact steps):
-- Run full CI pipeline on GitHub to verify coverage thresholds (ARCHITECTURE 4.4) pass
-- Verify npx expo-doctor job completes successfully (requires Expo project setup)
-- Verify GitHub Actions workflows run green on PR to main
-  Versions pinned:
-- Expo SDK: n/a (mobile scaffold created but Expo not fully configured)
-- @clerk/expo: n/a (not yet installed)
+- format:check: ✅ passed (prettier --check .)
+- vitest: ✅ passed (31 tests across 4 test files)
+FAILED detail (task: error, what was tried, rolled back? y/n): none
+NEEDS JAM (manual checks, with exact steps):
+- Device check on fix/mobile-entry branch: Android and iOS in Expo Go, Google sign-in completes, userId shows, sign out works
+Versions pinned:
+- Expo SDK: ^54.0.0 (apps/mobile/package.json)
+- @clerk/expo: ^4.6.6 (apps/mobile/package.json)
 - Fastify: ^5.2.0 (apps/api/package.json)
 - zod: ^3.23.8 (apps/api/package.json)
 - Vitest: ^1.6.1 (package.json, apps/api/package.json)
-- jose: ^5.10.0 (apps/api/devDependencies - tests-only for token minting)
 - @clerk/backend: ^3.17.2 (apps/api/package.json - production verification)
-  Commits (hash: message):
-- 99edf6f: "F1 fix: correct algorithm in JWK to PEM conversion for RS256"
-  - F1: JWK to PEM conversion using RSASSA-PKCS1-v1_5 instead of RSA-PSS
-  - Clerk tokens use RS256 (RSASSA-PKCS1-v1_5) for JWT verification
-- c9c3697: "my-first-app.md: Update Resume Packet for F4 (blocked on GitHub remote)"
-  - F2: Purge pnpm artifacts (pnpm-workspace.yaml, pnpm-lock.yaml, .pnpm-store)
-  - F3: Update resume packet with pinned versions and recent commits
-- a933b59: "my-first-app.md: Fill Resume Packet section (F3)"
-  - Previous resume packet entry
-    Blocked on (one specific question each):
-- What is the GitHub remote URL for this repository? (Required for F4 PR verification)
-  Human-only steps now needed:
-- Push commits to GitHub remote
-- Open PR to main to trigger CI (should be green)
-- Review coverage output to verify thresholds met
-- Verify expo-doctor completes without critical issues
+Commits (hash: message):
+- 8ff7cd7: "fix(mobile): enable new architecture for SDK 57"
+- ad2c490: "fix(mobile): ClerkProvider with SecureStore cache, SSO sign-in, me screen"
+- 16da16d: "fix(mobile): wire expo-router entry, mount placeholder screen"
+PR: https://github.com/CodeNinja585/my-first-app/pull/3
+Blocked on (one specific question each): none
+Human-only steps now needed:
+- Perform device check on fix/mobile-entry branch per M-FIX directive
+
+(End of file - total 366 lines)
