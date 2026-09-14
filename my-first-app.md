@@ -161,13 +161,13 @@ Out of v1 (do not build): reminders and push notifications (n8n candidate), Maes
 
 Full scope and criteria: ARCHITECTURE section 5.
 
-| Phase | Goal                                                                      | Verification criteria (summary)                                                                                                | Status                                           |
-| ----- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| 1     | Foundation and auth: monorepo, CI, `/v1/health`, `/v1/me`, Google sign-in | Auth tests green; CI green, and red on a failing-test PR; sign-in survives force-quit on Android and iOS                     | open (M-FIX directive)                           |
-| 2     | Server data plane: schema, migrations, push and pull                      | Server cases 1 to 9 green on PGlite; migration applies to Neon `dev`                                                           | not started                                      |
-| 3     | Local store, sync engine, minimal UI                                      | Client cases 10 to 16 green; airplane-mode script gives exactly 2 habits and 2 logs; reinstall restores data                   | not started                                      |
-| 4     | 7-day history and streaks                                                 | Domain cases 17 to 20 green; grid matches Neon; timezone change keeps ticks on their days                                      | not started                                      |
-| 5     | Production                                                                | Prod build signs in, logs, shows history; logs sync after a cold start; rollback drill; no secrets anywhere                    | not started (needs D1, D2, D3)                   |
+| Phase | Goal                                                                      | Verification criteria (summary)                                                                              | Status                         |
+| ----- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------ |
+| 1     | Foundation and auth: monorepo, CI, `/v1/health`, `/v1/me`, Google sign-in | Auth tests green; CI green, and red on a failing-test PR; sign-in survives force-quit on Android and iOS     | open (M-FIX directive)         |
+| 2     | Server data plane: schema, migrations, push and pull                      | Server cases 1 to 9 green on PGlite; migration applies to Neon `dev`                                         | not started                    |
+| 3     | Local store, sync engine, minimal UI                                      | Client cases 10 to 16 green; airplane-mode script gives exactly 2 habits and 2 logs; reinstall restores data | not started                    |
+| 4     | 7-day history and streaks                                                 | Domain cases 17 to 20 green; grid matches Neon; timezone change keeps ticks on their days                    | not started                    |
+| 5     | Production                                                                | Prod build signs in, logs, shows history; logs sync after a cold start; rollback drill; no secrets anywhere  | not started (needs D1, D2, D3) |
 
 ---
 
@@ -323,27 +323,28 @@ Date: 2026-09-14 / qwen/qwen3-coder-next / harness web
 Tasks attempted: M-FIX directive (fix/mobile-entry branch)
 passed: M1, M2, M3, M4 | failed: none
 Final output of typecheck, lint, format:check, vitest:
+
 - typecheck: ✅ passed (tsc -b --noEmit)
 - lint: ✅ passed (eslint . --max-warnings 0)
 - format:check: ✅ passed (prettier --check .)
 - vitest: ✅ passed (31 tests across 4 test files)
-FAILED detail (task: error, what was tried, rolled back? y/n): none
-NEEDS JAM (manual checks, with exact steps):
+  FAILED detail (task: error, what was tried, rolled back? y/n): none
+  NEEDS JAM (manual checks, with exact steps):
 - Device check on fix/mobile-entry branch: Android and iOS in Expo Go, Google sign-in completes, userId shows, sign out works
-Versions pinned:
+  Versions pinned:
 - Expo SDK: ^54.0.0 (apps/mobile/package.json)
 - @clerk/expo: ^4.6.6 (apps/mobile/package.json)
 - Fastify: ^5.2.0 (apps/api/package.json)
 - zod: ^3.23.8 (apps/api/package.json)
 - Vitest: ^1.6.1 (package.json, apps/api/package.json)
 - @clerk/backend: ^3.17.2 (apps/api/package.json - production verification)
-Commits (hash: message):
+  Commits (hash: message):
 - 8ff7cd7: "fix(mobile): enable new architecture for SDK 57"
 - ad2c490: "fix(mobile): ClerkProvider with SecureStore cache, SSO sign-in, me screen"
 - 16da16d: "fix(mobile): wire expo-router entry, mount placeholder screen"
-PR: https://github.com/CodeNinja585/my-first-app/pull/3
-Blocked on (one specific question each): none
-Human-only steps now needed:
+  PR: https://github.com/CodeNinja585/my-first-app/pull/3
+  Blocked on (one specific question each): none
+  Human-only steps now needed:
 - Perform device check on fix/mobile-entry branch per M-FIX directive
 
 (End of file - total 366 lines)
