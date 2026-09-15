@@ -24,7 +24,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     bundler: 'metro',
     output: 'static',
   },
-  plugins: ['expo-router'],
+  plugins: ['expo-router', 'expo-web-browser'],
   extra: {
     router: {
       origin: false,
