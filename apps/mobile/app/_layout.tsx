@@ -1,4 +1,4 @@
-import { ClerkProvider, ClerkProviderProps, useAuth } from '@clerk/expo';
+import { ClerkProvider } from '@clerk/expo';
 import * as SecureStore from 'expo-secure-store';
 import { Stack } from 'expo-router';
 import { env } from '../src/config/env';
@@ -21,22 +21,16 @@ const tokenCache = {
   },
 };
 
-const publishableKey =
-  process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const publishableKey = env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 if (!publishableKey) {
   console.error('EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY is required');
   process.exit(1);
 }
 
-const providerProps: ClerkProviderProps = {
-  publishableKey,
-  tokenCache,
-};
-
 export default function AppLayout() {
   return (
-    <ClerkProvider {...providerProps}>
+    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
       <Stack />
     </ClerkProvider>
   );
