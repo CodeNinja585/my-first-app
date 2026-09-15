@@ -119,6 +119,7 @@ Out of v1 (do not build): reminders and push notifications (n8n candidate), Maes
 11. `packages/shared` and `apps/mobile/src/sync` never import `react-native` or `expo-*`.
 12. Manual (device) checks are never marked passed by a model. They are recorded as NEEDS JAM.
 13. Cost rule: bulk work runs on the cheap model, not on Kimi K3 or Claude.
+14. Forced dependency resolution (npm overrides, --force, --legacy-peer-deps) is banned except by explicitly approved exception. Approved: 2026-09-15, root overrides pin react 19.2.3, react-dom 19.2.3, react-native 0.86.3 because @clerk/expo's transitive solana chain declares incompatible versions and React Native requires a single React instance.
 
 ---
 
