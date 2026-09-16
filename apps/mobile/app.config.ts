@@ -9,7 +9,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   icon: './assets/icon.png',
   scheme: 'myfirstapp',
   userInterfaceStyle: 'automatic',
-  newArchEnabled: false,
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.myfirstapp',
@@ -25,7 +24,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     bundler: 'metro',
     output: 'static',
   },
-  plugins: ['expo-router'],
+  plugins: ['expo-router', 'expo-web-browser'],
   extra: {
     router: {
       origin: false,

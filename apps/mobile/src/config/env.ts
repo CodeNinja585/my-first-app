@@ -4,7 +4,7 @@ const envSchema = z.object({
   EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: z
     .string()
     .min(1, 'EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY is required'),
-  EXPO_PUBLIC_API_URL: z.string().url('EXPO_PUBLIC_API_URL must be a valid URL').optional(),
+  EXPO_PUBLIC_API_URL: z.string().url('EXPO_PUBLIC_API_URL must be a valid URL'),
 });
 
 const parsed = envSchema.safeParse({
