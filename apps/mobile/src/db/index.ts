@@ -68,36 +68,15 @@ export async function toggleLog(habitId: string, dayKey: string): Promise<void> 
     throw new Error(`Invalid day key: ${dayKey}`);
   }
   const db = await initDb();
-  const stmt1 = await db.prepareAsync(
-    'SELECT 1 FROM habit_logs WHERE habit_id = ? AND day_key = ?'
-  );
-  try {
-    const result = await stmt1.executeAsync<[number]>();
-    const rows = await result.getAllAsync();
-    const exists = rows.length > 0;
-    if (exists) {
-      // Delete existing log (mark as not done)
-      const deleteStmt = await db.prepareAsync(
-        'DELETE FROM habit_logs WHERE habit_id = ? AND day_key = ?'
-      );
-      try {
-        await deleteStmt.executeAsync([habitId, dayKey]);
-      } finally {
-        await deleteStmt.finalizeAsync();
-      }
-    } else {
-      // Insert new log (mark as done)
-      const insertStmt = await db.prepareAsync(
-        'INSERT INTO habit_logs (habit_id, day_key) VALUES (?, ?)'
-      );
-      try {
-        await insertStmt.executeAsync([habitId, dayKey]);
-      } finally {
-        await insertStmt.finalizeAsync();
-      }
-    }
-  } finally {
-    await stmt1.finalizeAsync();
+  const result = await db.runAsync('DELETE FROM habit_logs WHERE habit_id = ? AND day_key = ?', [
+    habitId,
+    dayKey,
+  ]);
+  if (result.changes === 0) {
+    await db.runAsync('INSERT INTO habit_logs (habit_id, day_key) VALUES (?, ?)', [
+      habitId,
+      dayKey,
+    ]);
   }
 }
 
