@@ -41,3 +41,5 @@ export function isValidDayKey(s: string): boolean {
 
   return true;
 }
+
+export * from './sync';
