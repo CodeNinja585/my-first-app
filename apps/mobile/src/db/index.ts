@@ -87,7 +87,7 @@ export async function getLogsForDay(dayKey: string): Promise<Set<string>> {
   const db = await initDb();
   const stmt = await db.prepareAsync('SELECT habit_id FROM habit_logs WHERE day_key = ?');
   try {
-    const result = await stmt.executeAsync<{ habit_id: string }>();
+    const result = await stmt.executeAsync<{ habit_id: string }>([dayKey]);
     const rows = await result.getAllAsync();
     return new Set(rows.map((row) => row.habit_id));
   } finally {

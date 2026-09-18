@@ -65,17 +65,20 @@ function HabitListScreen() {
   }, [isSignedIn, userId, loadHabits]);
 
   useEffect(() => {
+    if (!isSignedIn || !userId) return;
     const load = async () => {
       const key = getTodayKey();
       if (!isValidDayKey(key)) return;
       try {
-        setTodayLogs(await getLogsForDay(key));
+        const logs = await getLogsForDay(key);
+        console.log('LOGS ON START', key, Array.from(logs));
+        setTodayLogs(logs);
       } catch (error) {
         console.error('Failed to load today logs:', error);
       }
     };
     void load();
-  }, []);
+  }, [isSignedIn, userId]);
 
   const handleAddHabit = useCallback(async () => {
     const name = newHabitName.trim();
